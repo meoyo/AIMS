@@ -1,0 +1,21 @@
+Package: AIMS
+Type: Package
+Title: AIMS : Absolute Assignment of Breast Cancer Intrinsic Molecular
+        Subtype
+Version: 0.99.4
+Date: 2014-06-25
+Description: Description: This package contains the AIMS
+        implementation. It contains necessary functions to assign the
+        five intrinsic molecular subtypes (Luminal A, Luminal B,
+        Her2-enriched, Basal-like, Normal-like). Assignments could be
+        done on individual samples as well as on dataset of gene
+        expression data.
+Author: Eric R. Paquet, Michael T. Hallett
+Maintainer: Eric R Paquet <eric.r.paquet@gmail.com>
+biocViews: Classification, RNASeq, Microarray, Software, GeneExpression
+Depends: R (>= 2.10), e1071, Biobase
+Suggests: breastCancerVDX, hgu133a.db, RUnit, BiocGenerics
+License: Artistic-2.0
+URL: http://www.bci.mcgill.ca/AIMS
+LazyData: yes
+InstallableEverywhere: yes

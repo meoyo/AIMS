@@ -1,0 +1,236 @@
+%\VignetteIndexEntry{AIMS An Introduction (HowTo)}
+%\VignetteDepends{e1071, hgu133a.db, breastCancerVDX}
+%\VignetteSuggests{}
+%\VignetteImports{}
+%\VignetteKeywords{Breast Cancer, molecular subtype, classification, cancer, microarray}
+%\VignettePackage{AIMS}
+
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{amsmath}
+\usepackage{times}
+\usepackage{hyperref}
+\usepackage[numbers]{natbib}
+\usepackage[american]{babel}
+\usepackage{authblk}
+\renewcommand\Affilfont{\itshape\small}
+\usepackage{Sweave}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\textfraction}{0.1}
+\usepackage{graphicx}
+\usepackage{tikz}
+
+
+\textwidth=6.2in
+\textheight=8.5in
+\parskip=.3cm
+\oddsidemargin=.1in
+\evensidemargin=.1in
+\headheight=-.3in
+
+%------------------------------------------------------------
+% newcommand
+%------------------------------------------------------------
+\newcommand{\scscst}{\scriptscriptstyle}
+\newcommand{\scst}{\scriptstyle}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rclass}[1]{\textit{#1}}
+\newcommand{\Rpackage}[1]{\textit{#1}}
+\newcommand{\Rexpression}[1]{\texttt{#1}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rfunarg}[1]{{\texttt{#1}}}
+
+
+\begin{document}
+
+%------------------------------------------------------------
+\title{\Rpackage{AIMS}: Absolute Assignment of Breast Cancer Intrinsic Molecular Subtype}
+%------------------------------------------------------------
+\author[1]{Eric R. Paquet (eric.r.paquet@gmail.com), Michael T. Hallett (michael.t.hallett@mcgill.ca)}
+
+\affil[1]{Department of Biochemistry, Breast cancer informatics,  McGill University, Montreal, Canada}
+
+\SweaveOpts{highlight=TRUE, tidy=TRUE, keep.space=TRUE, keep.blank.space=FALSE, keep.comment=TRUE}
+
+\maketitle
+\tableofcontents
+
+\newpage
+
+%------------------------------------------------------------
+\section{Introduction}
+%------------------------------------------------------------ 
+
+Technologies to measure gene expression in a massively parallel fashion have facilitated a more complete molecular understanding of breast cancer (BC) and a deeper appreciation for the heterogeneity of this disease\cite{1,2,3}. Although the subtypes defined by Estrogen Receptor (ER) and Human Epidermal growth factor Receptor 2 (Her2) status have long been recognized as distinct forms of the disease, early genomic studies emphasized the magnitude of the differences between the subtypes at the molecular level \cite{4,5}. Unbiased bioinformatic analyses of expression profiles provided the so-called intrinsic subtyping scheme, consisting of the Luminal A (LumA), Luminal B (LumB) and Normal-like (NormL) subtypes enriched for ER+ tumors, the Her2-enriched (Her2E) subtype containing many Her2+ tumors and the Basal-like (BasalL) subtype enriched for ER-/Her2- tumors \cite{1,2}. The subtypes have differing clinicopathological attributes, prognostic characteristics, and treatment options, providing sufficient clinical utility as to support their inclusion within international guidelines for treatment\cite{6}. In fact, the ProsignaTM PAM50-based risk of recurrence (ROR) score generated from the intrinsic subtypes has recently received FDA approved for clinical use \cite{7}. Several alternative omics-based subtyping schemes promise similar utility\cite{8,9,10,11}.
+
+Subtyping tools built in the manner of PAM50 have severe shortcomings\cite{12,13,14}. The application of normalization procedures and gene-centering techniques are necessary to remove batch effects and insure comparability between expression levels of genes across patients\cite{12, 13}. However, different normalization procedures have been shown to lead to different subtype classifications for patients\cite{12,13,14,15}. In lieu of absolute estimations of mRNA copy number per gene per individual, gene-centering techniques are used to adjust expression measurements to represent the change in abundance of a specific mRNA species relative to the cohort of patients. However, these steps make such methods sensitive to the composition of patients in the dataset. Both differences in the ratio of ER+ to ER- samples and differences in the frequency of each intrinsic subtype within a dataset have been shown to influence subtype assignments\cite{12}. It remains unknown as to the degree of imbalance necessary to cause such ``subtype instability''.
+
+We present a bioinformatics approach entitled Absolute Intrinsic Molecular Subtyping \Rpackage{AIMS} for estimating patient subtype that circumvents these shortcomings. The method does not require a panel of gene expression samples. As such, it is the first method that can accurately assign subtype to a single patient whilst being insensitive to changes in normalization procedures or the relative frequencies of ER+ tumors, of subtypes or of other clinicopathological patient attributes. The stability and accuracy of AIMS is explored for the intrinsic subtyping scheme across several datasets generated via microarrays or RNA-Seq. More detail about \Rpackage{AIMS} could be found in Paquet et al. (in review at the Journal of the National Cancer Institute).
+
+
+The \Rpackage{AIMS} package is providing the necessary functions to assign the five intrinsic subtypes of 
+breast cancer to either a single gene expression experiment or to a dataset of gene expression data \cite{16}.
+
+%------------------------------------------------------------
+\section{Case Study: Assigning breast cancer subtype to a dataset of breast cancer microarray data}
+%------------------------------------------------------------ 
+We first need to load the package \Rpackage{AIMS} and our example dataset. In this case study we will use a fraction of the McGill dataset describe in the paper and also \Rpackage{breastCancerVDX}.
+<<loadPackages,results=hide>>=
+library(AIMS)
+data(mcgillExample)
+@
+
+To get breast cancer subtypes for a dataset we need to provide the expression values that have not been gene centered. It means all the expression values will be positive. In the case of a two-colors array the user should select only the channel that contains the tumor sample (usually the Cy5 channel).
+
+<<showMcGill,results=hide, echo=FALSE>>=
+dim(mcgillExample$D)
+## convert the expression matrix to an ExpressionSet (Biobase)
+mcgillExample$D <- ExpressionSet(assayData=mcgillExample$D)
+head(mcgillExample$D[,1:5])
+head(mcgillExample$EntrezID)
+@
+
+In the previous code we have shown the size of the expression matrix for the McGill example as well as the first expression values and the characters vector of Entrez ids. \Rpackage{AIMS} require the use of Entrez ids to prevent any confusion related to unstable gene symbols.
+<<assignSubtypeToMcGill>>=
+mcgill.subtypes <- applyAIMS(mcgillExample$D,
+                             mcgillExample$EntrezID)
+names(mcgill.subtypes)
+head(mcgill.subtypes$cl)
+head(mcgill.subtypes$prob)
+table(mcgill.subtypes$cl)
+@
+
+applyAIMS is the function used to assign AIMS to both single sample and dataset of gene expression data. The first parameter should be a numerical matrix composed of positive-only values. Rows represent genes and columns samples. The second argument represents the EntrezIds corresponding to genes in the first parameter. AIMS will deal with duplicated EntrezId so you should leave them there.
+
+applyAIMS will return a list of arguments. cl represents the molecular assignment in (Basal,Her2, LumA (Luminal A), LumB (Luminal B) and Normal). The variable prob corresponds to a matrix with five columns and number of rows corresponding to the number of samples in D. This matrix contains the posterior probabilities returned from the Naive Bayes classifier. 
+
+<<assigneSampleOneSubtypeMcGill>>=
+mcgill.first.sample.subtype <- applyAIMS(mcgillExample$D[,1,drop=FALSE],
+                                         mcgillExample$EntrezID)
+names(mcgill.first.sample.subtype)
+head(mcgill.first.sample.subtype$cl)
+head(mcgill.first.sample.subtype$prob)
+table(mcgill.first.sample.subtype$cl)
+@
+
+This is the same example as before except now we are assigning subtype to only one sample.
+
+<<assignSubtypeToVDX>>=
+library(breastCancerVDX)
+library(hgu133a.db)
+data(vdx)
+
+hgu133a.entrez <- as.character(as.list(hgu133aENTREZID)[featureNames(vdx)])
+vdx.subtypes <- applyAIMS(vdx,
+                          hgu133a.entrez)
+names(vdx.subtypes)
+head(vdx.subtypes$cl)
+head(vdx.subtypes$prob)
+table(vdx.subtypes$cl)
+@
+
+Here we are assigning AIMS subtypes on the \Rpackage{vdx} dataset. We are using \Rpackage(hgu133a.db) to obtain EntrezIds corresponding to the probes of the HG-133A array. \Rpackage{AIMS} has been designed to be applicable on this platform.
+
+%------------------------------------------------------------
+%------------------------------------------------------------
+%------------------------------------------------------------
+%------------------------------------------------------------
+%%% CODE Stop
+%------------------------------------------------------------
+%------------------------------------------------------------
+%------------------------------------------------------------
+
+\begin{thebibliography}{9}
+  
+    \bibitem{1}
+      Perou CM, Sorlie T, Eisen MB, et al. 
+      Molecular portraits of human breast tumours.
+      Nature 2000;406(6797):747-52.
+    
+    \bibitem{2}
+      Sorlie T, Perou CM, Tibshirani R, et al.
+      Gene expression patterns of breast carcinomas distinguish tumor subclasses with clinical implications.
+      Proc Natl Acad Sci U S A 2001;98(19):10869-74.
+      
+    \bibitem{3}
+      Weigelt B, Baehner FL, Reis-Filho JS.
+      The contribution of gene expression profiling to breast cancer classification, prognostication and prediction: a retrospective of the last decade.
+      J Pathol 2010;220(2):263-80.
+  
+    \bibitem{4}
+      Gruvberger S, Ringner M, Chen Y, et al.
+      Estrogen receptor status in breast cancer is associated with remarkably distinct gene expression patterns.
+      Cancer Res 2001;61(16):5979-84.
+      
+    \bibitem{5}
+      Pusztai L, Ayers M, Stec J, et al.
+      Gene expression profiles obtained from fine-needle aspirations of breast cancer reliably identify routine prognostic markers and reveal large-scale molecular differences between estrogen-negative and estrogen-positive tumors.
+      Clin Cancer Res 2003;9(7):2406-15.
+  
+    \bibitem{6}
+      Goldhirsch A, Wood WC, Coates AS, et al.
+      Strategies for subtypes--dealing with the diversity of breast cancer: highlights of the St. Gallen International Expert Consensus on the Primary Therapy of Early Breast Cancer 2011. 
+      Ann Oncol 2011;22(8):1736-47.
+  
+    \bibitem{7}
+      Harbeck N, Sotlar K, Wuerstlein R, et al.
+      Molecular and protein markers for clinical decision making in breast cancer: Today and tomorrow.
+      Cancer Treat Rev 2013; 10.1016/j.ctrv.2013.09.014.
+  
+    \bibitem{8}
+      Guedj M, Marisa L, de Reynies A, et al.
+      A refined molecular taxonomy of breast cancer.
+      Oncogene 2012;31(9):1196-206.
+  
+    \bibitem{9}
+      Lehmann BD, Bauer JA, Chen X, et al.
+      Identification of human triple-negative breast cancer subtypes and preclinical models for selection of targeted therapies.
+      J Clin Invest 2011;121(7):2750-67.
+  
+    \bibitem{10}
+      Jonsson G, Staaf J, Vallon-Christersson J, et al.
+      Genomic subtypes of breast cancer identified by array-comparative genomic hybridization display distinct molecular and clinical characteristics.
+      Breast Cancer Res 2010;12(3):R42.
+  
+    \bibitem{11}
+      Curtis C, Shah SP, Chin SF, et al.
+      The genomic and transcriptomic architecture of 2,000 breast tumours reveals novel subgroups.
+      Nature 2012;486(7403):346-52.
+  
+    \bibitem{12}
+      Lusa L, McShane LM, Reid JF, et al.
+      Challenges in projecting clustering results across gene expression-profiling datasets.
+      J Natl Cancer Inst 2007;99(22):1715-23.
+  
+    \bibitem{13}
+      Sorlie T, Borgan E, Myhre S, et al.
+      The importance of gene-centring microarray data.
+      Lancet Oncol 2010;11(8):719-20; author reply 720-1.
+  
+    \bibitem{14}
+      Weigelt B, Mackay A, A'Hern R, et al.
+      Breast cancer molecular profiling with single sample predictors: a retrospective analysis.
+      Lancet Oncol 2010;11(4):339-49.
+  
+    \bibitem{15}
+      Perou CM, Parker JS, Prat A, et al.
+      Clinical implementation of the intrinsic subtypes of breast cancer.
+      Lancet Oncol 2010;11(8):718-9; author reply 720-1.
+
+    \bibitem{16}
+      Parker JS, Mullins M, Cheang MCU, et al.
+      Supervised risk predictor of breast cancer based on intrinsic subtypes.
+      Journal of clinical oncology 2009;27:1160-7.
+      
+\end{thebibliography}
+
+\newpage
+%------------------------------------------------------------
+\section{Session Info}
+%------------------------------------------------------------ 
+<<sessionInfo,echo=FALSE,results=tex>>==
+toLatex(sessionInfo())
+@
+
+\end{document}
