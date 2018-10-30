@@ -2,7 +2,7 @@ Package: AIMS
 Type: Package
 Title: AIMS : Absolute Assignment of Breast Cancer Intrinsic Molecular
         Subtype
-Version: 1.14.0
+Version: 1.15.0
 Date: 2014-06-25
 Description: This package contains the AIMS
         implementation. It contains necessary functions to assign the
