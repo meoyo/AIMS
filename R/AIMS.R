@@ -35,13 +35,23 @@
   nb.d <- data.frame(t(train.pairs))
   all.probs <- list()
   for (ki in one.vs.all.tsp$k){
-    message(sprintf("Current k = %d",ki))
-    prob.train <- predict(one.vs.all.tsp$one.vs.all.tsp[[ki]],nb.d,type="raw")
-    cur.cl <- apply(prob.train,1,function(prob.cur){colnames(prob.train)[which.max(prob.cur)]})
-    cur.prob <- apply(prob.train,1,function(prob.cur){max(prob.cur)})
-    prob[,as.character(ki)] <- cur.prob
-    classes[,as.character(ki)] <- cur.cl
-    all.probs[[as.character(ki)]] <- prob.train
+      message(sprintf("Current k = %d",ki))
+
+      ## need to add this for the new version of e1071 (1.7-1)
+      ## there is now a new isnumeric field in the naive bayes object
+      ## we need to update our model consequently.
+      isnumeric <- list()
+      for (ni in names(one.vs.all.tsp$one.vs.all.tsp[[ki]]$tables)){
+          isnumeric[[ni]] <- TRUE
+      }
+      one.vs.all.tsp$one.vs.all.tsp[[ki]]$isnumeric <- isnumeric
+      
+      prob.train <- predict(one.vs.all.tsp$one.vs.all.tsp[[ki]],nb.d,type="raw")
+      cur.cl <- apply(prob.train,1,function(prob.cur){colnames(prob.train)[which.max(prob.cur)]})
+      cur.prob <- apply(prob.train,1,function(prob.cur){max(prob.cur)})
+      prob[,as.character(ki)] <- cur.prob
+      classes[,as.character(ki)] <- cur.cl
+      all.probs[[as.character(ki)]] <- prob.train
   }
   invisible(list(cl = classes,prob = prob,all.probs = all.probs,rules.matrix=train.pairs))
 }
